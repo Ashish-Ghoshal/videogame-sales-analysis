@@ -5,6 +5,18 @@ import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+import json # Import json module
+
+# Custom JSON encoder to handle NumPy arrays
+class NumpyEncoder(json.JSONEncoder):
+    """
+    Custom JSON encoder that extends the default JSONEncoder to handle NumPy arrays.
+    It converts NumPy arrays into Python lists, which are JSON serializable.
+    """
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 
 def load_processed_data(file_path):
     """
@@ -417,52 +429,14 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: genre_metrics/global_sales_by_genre_boxplot_log.png")
 
-    # Best Games by Critic Score and Global Sales (Static)
-    print("\n--- Generating Best Games by Critic Score and Global Sales Plot ---")
-    best_games_plots_dir = os.path.join(plots_dir, 'best_games')
-    os.makedirs(best_games_plots_dir, exist_ok=True)
-
-    # Business Question: Which games have achieved both high critic scores and significant global sales?
-    # Insight: Identifies critical and commercial successes, potentially revealing common characteristics.
-    # Prepare data: Drop NaNs in Critic_Score and Global_Sales, sort, and select top 25
-    t25_cr = df.dropna(subset=['Critic_Score', 'Global_Sales']).sort_values(by='Critic_Score', ascending=False).head(25)
-
-    fig, ax = plt.subplots(figsize=(20, 10))
-    ax2 = ax.twinx() # Create a twin Y-axis for Global Sales
-
-    # Bar plot for Critic Score
-    sns.barplot(x='Name', y='Critic_Score', data=t25_cr, color='skyblue', label="Critic Score", ax=ax, alpha=0.7)
-    ax.set_ylabel("Critic Score (out of 100)", color='skyblue')
-    ax.tick_params(axis='y', labelcolor='skyblue')
-
-    # Line plot for Global Sales
-    sns.lineplot(x='Name', y='Global_Sales', data=t25_cr, color='green', label="Global Sales", marker='o', linestyle='-', linewidth=2, ax=ax2)
-    ax2.set_ylabel("Global Sales (Millions)", color='green')
-    ax2.tick_params(axis='y', labelcolor='green')
-
-    # Set title and x-axis labels
-    plt.title("Top 25 Games by Critic Score and Global Sales", fontsize=16)
-    ax.set_xlabel("Game Name", fontsize=12)
-    ax.tick_params(axis='x', rotation=90, labelsize=10) # Rotate labels for readability
-
-    # Combine legends
-    lines, labels = ax.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2, labels + labels2, loc='upper right', bbox_to_anchor=(1.15, 1))
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(best_games_plots_dir, 'top_25_critic_score_sales_static.png'))
-    plt.close()
-    print("Saved: best_games/top_25_critic_score_sales_static.png")
-
 
 def create_interactive_plots(df, plots_dir='plots/html'):
     """
-    Generates interactive Plotly visualizations and saves them as HTML files.
+    Generates interactive Plotly visualizations and saves their JSON data.
 
     Args:
         df (pd.DataFrame): The DataFrame to visualize.
-        plots_dir (str): Directory to save interactive plots.
+        plots_dir (str): Directory to save interactive plot JSON files.
     """
     if df is None:
         return
@@ -484,8 +458,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Genre': True, 'value': ':.2f'}
     )
     fig_regional_genre.update_layout(xaxis_tickangle=-45)
-    fig_regional_genre.write_html(os.path.join(plots_dir, 'regional_sales_by_genre_interactive.html'))
-    print("Saved: regional_sales_by_genre_interactive.html")
+    with open(os.path.join(plots_dir, 'regional_sales_by_genre_interactive.json'), 'w') as f:
+        json.dump(fig_regional_genre.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: regional_sales_by_genre_interactive.json")
 
     # Business Question: How have regional and global sales trends evolved over time?
     # Insight: Shows market growth, decline, and relative importance of regions over years.
@@ -500,8 +475,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Year_of_Release': True, 'value': ':.2f'}
     )
     fig_regional_trends.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
-    fig_regional_trends.write_html(os.path.join(plots_dir, 'regional_sales_trends_interactive.html'))
-    print("Saved: regional_sales_trends_interactive.html")
+    with open(os.path.join(plots_dir, 'regional_sales_trends_interactive.json'), 'w') as f:
+        json.dump(fig_regional_trends.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: regional_sales_trends_interactive.json")
 
     # Business Question: Which platforms have generated the most global sales?
     # Insight: Identifies dominant platforms in the overall market.
@@ -516,8 +492,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Platform': True, 'Global_Sales': ':.2f'}
     )
     fig_platform_sales.update_layout(xaxis_tickangle=-45)
-    fig_platform_sales.write_html(os.path.join(plots_dir, 'sales_by_platform_interactive.html'))
-    print("Saved: sales_by_platform_interactive.html")
+    with open(os.path.join(plots_dir, 'sales_by_platform_interactive.json'), 'w') as f:
+        json.dump(fig_platform_sales.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: sales_by_platform_interactive.json")
 
     # Business Question: What is the overall trend of global video game sales over time?
     # Insight: Shows the industry's historical growth or decline.
@@ -532,8 +509,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Year_of_Release': True, 'Global_Sales': ':.2f'}
     )
     fig_global_trend.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
-    fig_global_trend.write_html(os.path.join(plots_dir, 'sales_trends_interactive.html'))
-    print("Saved: sales_trends_interactive.html")
+    with open(os.path.join(plots_dir, 'sales_trends_interactive.json'), 'w') as f:
+        json.dump(fig_global_trend.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: sales_trends_interactive.json")
 
     # Business Question: How do critic and user scores relate, and how does this impact sales?
     # Insight: Reveals agreement/disagreement between critics and users, and how this correlates with commercial success.
@@ -570,8 +548,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         name='Perfect Agreement',
         line=dict(color='red', dash='dash', width=2)
     ))
-    fig_scores_scatter_enhanced.write_html(os.path.join(plots_dir, 'critic_vs_user_score_scatter_enhanced_interactive.html'))
-    print("Saved: critic_vs_user_score_scatter_enhanced_interactive.html")
+    with open(os.path.join(plots_dir, 'critic_vs_user_score_scatter_enhanced_interactive.json'), 'w') as f:
+        json.dump(fig_scores_scatter_enhanced.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: critic_vs_user_score_scatter_enhanced_interactive.json")
 
 
     # Publisher and Developer Impact Analysis Interactive Plots
@@ -596,8 +575,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Year_of_Release': True, 'Global_Sales': ':.2f', 'Publisher': True}
     )
     fig_publisher_trends.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
-    fig_publisher_trends.write_html(os.path.join(publisher_dev_plots_dir_html, 'publisher_sales_trends_interactive.html'))
-    print("Saved: publishers_developers/publisher_sales_trends_interactive.html")
+    with open(os.path.join(publisher_dev_plots_dir_html, 'publisher_sales_trends_interactive.json'), 'w') as f:
+        json.dump(fig_publisher_trends.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: publishers_developers/publisher_sales_trends_interactive.json")
 
     # Business Question: What is the average sales performance per game for top publishers?
     # Insight: Helps identify publishers that consistently produce high-quality or high-selling titles.
@@ -612,8 +592,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Publisher': True, 'Global_Sales': ':.2f'}
     )
     fig_avg_sales_publisher.update_layout(xaxis_tickangle=-45)
-    fig_avg_sales_publisher.write_html(os.path.join(publisher_dev_plots_dir_html, 'avg_sales_per_publisher_interactive.html'))
-    print("Saved: publishers_developers/avg_sales_per_publisher_interactive.html")
+    with open(os.path.join(publisher_dev_plots_dir_html, 'avg_sales_per_publisher_interactive.json'), 'w') as f:
+        json.dump(fig_avg_sales_publisher.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: publishers_developers/avg_sales_per_publisher_interactive.json")
 
     # NEW PLOT: Top 25 Publishers by Global Sales with Average Critic and User Scores
     print("\n--- Generating Interactive Top 25 Publishers by Global Sales and Scores Plot ---")
@@ -700,8 +681,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         height=700 # Increased height for better readability
     )
 
-    fig_top_publishers_sales_scores.write_html(os.path.join(publisher_dev_plots_dir_html, 'top_25_publishers_sales_scores_interactive.html'))
-    print("Saved: publishers_developers/top_25_publishers_sales_scores_interactive.html")
+    with open(os.path.join(publisher_dev_plots_dir_html, 'top_25_publishers_sales_scores_interactive.json'), 'w') as f:
+        json.dump(fig_top_publishers_sales_scores.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: publishers_developers/top_25_publishers_sales_scores_interactive.json")
 
 
     # Rating (ESRB/PEGI) Analysis Interactive Plots
@@ -725,8 +707,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
             hover_data={'Rating': True, 'value': ':.2f'}
         )
         fig_regional_rating.update_layout(xaxis_tickangle=-45)
-        fig_regional_rating.write_html(os.path.join(rating_plots_dir_html, 'regional_sales_by_rating_interactive.html'))
-        print("Saved: ratings/regional_sales_by_rating_interactive.html")
+        with open(os.path.join(rating_plots_dir_html, 'regional_sales_by_rating_interactive.json'), 'w') as f:
+            json.dump(fig_regional_rating.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+        print("Saved: ratings/regional_sales_by_rating_interactive.json")
     else:
         print("Skipping interactive Regional Sales by Rating plot: 'Rating' column has too many missing values after dropping NaNs.")
 
@@ -751,8 +734,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
                 height=600
             )
             fig_genre_rating_stacked.update_layout(xaxis_tickangle=-45)
-            fig_genre_rating_stacked.write_html(os.path.join(rating_plots_dir_html, 'rating_distribution_per_genre_interactive.html'))
-            print("Saved: ratings/rating_distribution_per_genre_interactive.html")
+            with open(os.path.join(rating_plots_dir_html, 'rating_distribution_per_genre_interactive.json'), 'w') as f:
+                json.dump(fig_genre_rating_stacked.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+            print("Saved: ratings/rating_distribution_per_genre_interactive.json")
         else:
             print("Skipping interactive Rating Distribution per Genre plot: No data for top genres with ratings.")
     else:
@@ -776,8 +760,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Year_of_Release': True, 'Global_Sales': ':.2f'}
     )
     fig_yearly_sales_interactive.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
-    fig_yearly_sales_interactive.write_html(os.path.join(seasonality_plots_dir_html, 'yearly_global_sales_trend_interactive.html'))
-    print("Saved: seasonality/yearly_global_sales_trend_interactive.html")
+    with open(os.path.join(seasonality_plots_dir_html, 'yearly_global_sales_trend_interactive.json'), 'w') as f:
+        json.dump(fig_yearly_sales_interactive.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: seasonality/yearly_global_sales_trend_interactive.json")
 
     # Business Question: How do average critic and user scores vary by genre?
     # Insight: Helps understand general quality perception across different game types.
@@ -796,8 +781,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Name': True, 'Platform': True, 'Global_Sales': ':.2f'}
     )
     fig_critic_score_genre_box.update_layout(xaxis_tickangle=-45)
-    fig_critic_score_genre_box.write_html(os.path.join(genre_metrics_plots_dir_html, 'critic_score_by_genre_boxplot_interactive.html'))
-    print("Saved: genre_metrics/critic_score_by_genre_boxplot_interactive.html")
+    with open(os.path.join(genre_metrics_plots_dir_html, 'critic_score_by_genre_boxplot_interactive.json'), 'w') as f:
+        json.dump(fig_critic_score_genre_box.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: genre_metrics/critic_score_by_genre_boxplot_interactive.json")
 
     # Interactive Box plot for User Score by Genre (using scaled score)
     if 'User_Score_Scaled' in df.columns:
@@ -810,8 +796,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
             hover_data={'Name': True, 'Platform': True, 'Global_Sales': ':.2f'}
         )
         fig_user_score_genre_box.update_layout(xaxis_tickangle=-45)
-        fig_user_score_genre_box.write_html(os.path.join(genre_metrics_plots_dir_html, 'user_score_by_genre_boxplot_interactive.html'))
-        print("Saved: genre_metrics/user_score_by_genre_boxplot_interactive.html")
+        with open(os.path.join(genre_metrics_plots_dir_html, 'user_score_by_genre_boxplot_interactive.json'), 'w') as f:
+            json.dump(fig_user_score_genre_box.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+        print("Saved: genre_metrics/user_score_by_genre_boxplot_interactive.json")
     else:
         print("Skipping Interactive User Score by Genre Boxplot: 'User_Score_Scaled' not available.")
 
@@ -826,8 +813,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Name': True, 'Platform': True, 'Critic_Score': ':.1f'}
     )
     fig_global_sales_genre_box.update_layout(xaxis_tickangle=-45)
-    fig_global_sales_genre_box.write_html(os.path.join(genre_metrics_plots_dir_html, 'global_sales_by_genre_boxplot_interactive_log.html'))
-    print("Saved: genre_metrics/global_sales_by_genre_boxplot_interactive_log.html")
+    with open(os.path.join(genre_metrics_plots_dir_html, 'global_sales_by_genre_boxplot_interactive.json'), 'w') as f:
+        json.dump(fig_global_sales_genre_box.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: genre_metrics/global_sales_by_genre_boxplot_interactive.json")
 
     # Top 25 Games by Global Sales with Critic and User Scores
     print("\n--- Generating Interactive Top 25 Games by Global Sales and Scores Plot ---")
@@ -910,8 +898,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         height=700 # Increased height for better readability
     )
 
-    fig_top_sales_scores.write_html(os.path.join(best_games_plots_dir_html, 'top_25_global_sales_and_scores_interactive.html'))
-    print("Saved: best_games/top_25_global_sales_and_scores_interactive.html")
+    with open(os.path.join(best_games_plots_dir_html, 'top_25_global_sales_and_scores_interactive.json'), 'w') as f:
+        json.dump(fig_top_sales_scores.to_dict(), f, cls=NumpyEncoder) # Use custom encoder
+    print("Saved: best_games/top_25_global_sales_and_scores_interactive.json")
 
 
 def create_dashboard(summary_stats_html, plots_dir='plots/html'):
@@ -928,34 +917,55 @@ def create_dashboard(summary_stats_html, plots_dir='plots/html'):
 
     # Paths to individual interactive plots relative to the dashboard.html
     plot_files = {
-        'regional_sales_by_genre': 'regional_sales_by_genre_interactive.html',
-        'regional_sales_trends': 'regional_sales_trends_interactive.html',
-        'sales_by_platform': 'sales_by_platform_interactive.html',
-        'sales_trends': 'sales_trends_interactive.html',
-        'critic_vs_user_score': 'critic_vs_user_score_scatter_enhanced_interactive.html',
-        'publisher_sales_trends': 'publishers_developers/publisher_sales_trends_interactive.html',
-        'avg_sales_per_publisher': 'publishers_developers/avg_sales_per_publisher_interactive.html',
-        'regional_sales_by_rating': 'ratings/regional_sales_by_rating_interactive.html',
-        'rating_distribution_per_genre_interactive': 'ratings/rating_distribution_per_genre_interactive.html',
-        'yearly_global_sales_trend_interactive': 'seasonality/yearly_global_sales_trend_interactive.html',
-        'critic_score_by_genre_boxplot_interactive': 'genre_metrics/critic_score_by_genre_boxplot_interactive.html',
-        'user_score_by_genre_boxplot_interactive': 'genre_metrics/user_score_by_genre_boxplot_interactive.html',
-        'global_sales_by_genre_boxplot_interactive_log': 'genre_metrics/global_sales_by_genre_boxplot_interactive_log.html',
-        'top_25_global_sales_and_scores_interactive': 'best_games/top_25_global_sales_and_scores_interactive.html',
-        'top_25_publishers_sales_scores_interactive': 'publishers_developers/top_25_publishers_sales_scores_interactive.html'
+        'regional_sales_by_genre': 'regional_sales_by_genre_interactive.json',
+        'regional_sales_trends': 'regional_sales_trends_interactive.json',
+        'sales_by_platform': 'sales_by_platform_interactive.json',
+        'sales_trends': 'sales_trends_interactive.json',
+        'critic_vs_user_score': 'critic_vs_user_score_scatter_enhanced_interactive.json',
+        'publisher_sales_trends': 'publishers_developers/publisher_sales_trends_interactive.json',
+        'avg_sales_per_publisher': 'publishers_developers/avg_sales_per_publisher_interactive.json',
+        'regional_sales_by_rating': 'ratings/regional_sales_by_rating_interactive.json',
+        'rating_distribution_per_genre_interactive': 'ratings/rating_distribution_per_genre_interactive.json',
+        'yearly_global_sales_trend_interactive': 'seasonality/yearly_global_sales_trend_interactive.json',
+        'critic_score_by_genre_boxplot_interactive': 'genre_metrics/critic_score_by_genre_boxplot_interactive.json',
+        'user_score_by_genre_boxplot_interactive': 'genre_metrics/user_score_by_genre_boxplot_interactive.json',
+        'global_sales_by_genre_boxplot_interactive_log': 'genre_metrics/global_sales_by_genre_boxplot_interactive.json', # Changed to .json
+        'top_25_global_sales_and_scores_interactive': 'best_games/top_25_global_sales_and_scores_interactive.json',
+        'top_25_publishers_sales_scores_interactive': 'publishers_developers/top_25_publishers_sales_scores_interactive.json'
     }
 
-    # Read content of each HTML plot
-    plot_contents = {}
+    # Read content of each Plotly JSON file
+    plot_json_data = {}
     for key, filename in plot_files.items():
         file_path = os.path.join(plots_dir, filename)
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
-                plot_contents[key] = f.read()
+                try:
+                    plot_json_data[key] = json.load(f)
+                except json.JSONDecodeError as e:
+                    plot_json_data[key] = None
+                    print(f"Warning: Error decoding JSON from {filename}: {e}. Plot will not be displayed.")
         else:
-            plot_contents[key] = f"<p>Error: {filename} not found. Please ensure EDA script ran successfully and generated this plot.</p>"
-            print(f"Warning: {filename} not found for dashboard. Please ensure EDA script ran successfully and generated this plot.")
+            plot_json_data[key] = None
+            print(f"Warning: {filename} not found for dashboard. Plot will not be displayed.")
 
+    # Generate Plotly rendering script calls
+    plotly_script_calls = ""
+    for key, json_data in plot_json_data.items():
+        if json_data:
+            div_id = f"plotly-div-{key}"
+            # Plotly.js expects data and layout as separate arguments
+            data_json_str = json.dumps(json_data.get('data', []))
+            layout_json_str = json.dumps(json_data.get('layout', {}))
+            plotly_script_calls += f"""
+            var {key}_data = {data_json_str};
+            var {key}_layout = {layout_json_str};
+            Plotly.newPlot('{div_id}', {key}_data, {key}_layout, {{responsive: true}});
+            """
+        else:
+            plotly_script_calls += f"""
+            document.getElementById('plotly-div-{key}').innerHTML = "<p class='text-red-500'>Error loading plot: {key}.</p>";
+            """
 
     # HTML structure for the dashboard
     dashboard_html = f"""
@@ -967,6 +977,7 @@ def create_dashboard(summary_stats_html, plots_dir='plots/html'):
         <title>Video Game Sales Analysis Dashboard</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> <!-- Load Plotly.js once -->
         <style>
             body {{
                 font-family: 'Inter', sans-serif;
@@ -1054,68 +1065,68 @@ def create_dashboard(summary_stats_html, plots_dir='plots/html'):
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Regional Sales by Genre</h2>
-                    {plot_contents['regional_sales_by_genre']}
+                    <div id="plotly-div-regional_sales_by_genre" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Regional and Global Sales Trends Over Time</h2>
-                    {plot_contents['regional_sales_trends']}
+                    <div id="plotly-div-regional_sales_trends" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card">
                     <h2 class="card-title">Total Global Sales by Platform</h2>
-                    {plot_contents['sales_by_platform']}
+                    <div id="plotly-div-sales_by_platform" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card">
                     <h2 class="card-title">Global Sales Trends Over Time</h2>
-                    {plot_contents['sales_trends']}
+                    <div id="plotly-div-sales_trends" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Critic Score vs User Score (Scaled for Comparison, Sized by Global Sales)</h2>
                     <h3 class="text-lg font-semibold text-gray-700 mb-2">Enhanced Scatter Plot (with opacity for density):</h3>
-                    {plot_contents['critic_vs_user_score']}
+                    <div id="plotly-div-critic_vs_user_score" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Publisher and Developer Impact</h2>
                     <h3 class="text-lg font-semibold text-gray-700 mb-2">Publisher Sales Trends Over Time:</h3>
-                    {plot_contents['publisher_sales_trends']}
+                    <div id="plotly-div-publisher_sales_trends" class="plotly-graph-div"></div>
                     <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Average Sales per Game by Publisher:</h3>
-                    {plot_contents['avg_sales_per_publisher']}
+                    <div id="plotly-div-avg_sales_per_publisher" class="plotly-graph-div"></div>
                     <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Top 25 Publishers by Global Sales with Average Critic and User Scores:</h3>
-                    {plot_contents['top_25_publishers_sales_scores_interactive']}
+                    <div id="plotly-div-top_25_publishers_sales_scores_interactive" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Game Rating Analysis</h2>
                     <h3 class="text-lg font-semibold text-gray-700 mb-2">Regional Sales by Game Rating:</h3>
-                    {plot_contents['regional_sales_by_rating']}
+                    <div id="plotly-div-regional_sales_by_rating" class="plotly-graph-div"></div>
                     <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Rating Distribution within Top 10 Genres:</h3>
-                    {plot_contents['rating_distribution_per_genre_interactive']}
+                    <div id="plotly-div-rating_distribution_per_genre_interactive" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Genre Performance Metrics</h2>
                     <h3 class="text-lg font-semibold text-gray-700 mb-2">Distribution of Critic Scores by Genre:</h3>
-                    {plot_contents['critic_score_by_genre_boxplot_interactive']}
+                    <div id="plotly-div-critic_score_by_genre_boxplot_interactive" class="plotly-graph-div"></div>
                     <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Distribution of User Scores (Scaled) by Genre:</h3>
-                    {plot_contents['user_score_by_genre_boxplot_interactive']}
+                    <div id="plotly-div-user_score_by_genre_boxplot_interactive" class="plotly-graph-div"></div>
                     <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Distribution of Global Sales by Genre (Log Scale):</h3>
-                    {plot_contents['global_sales_by_genre_boxplot_interactive_log']}
+                    <div id="plotly-div-global_sales_by_genre_boxplot_interactive_log" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Overall Sales Trends</h2>
                     <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Global Sales Trend by Year:</h3>
-                    {plot_contents['yearly_global_sales_trend_interactive']}
+                    <div id="plotly-div-yearly_global_sales_trend_interactive" class="plotly-graph-div"></div>
                 </div>
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Top Performing Games</h2>
                     <h3 class="text-lg font-semibold text-gray-700 mb-2">Top 25 Games by Global Sales with Critic and User Scores:</h3>
-                    {plot_contents['top_25_global_sales_and_scores_interactive']}
+                    <div id="plotly-div-top_25_global_sales_and_scores_interactive" class="plotly-graph-div"></div>
                 </div>
 
             </div>
@@ -1124,6 +1135,10 @@ def create_dashboard(summary_stats_html, plots_dir='plots/html'):
                 <p>&copy; 2023 Video Game Sales Analysis. All rights reserved.</p>
             </footer>
         </div>
+        <script type="text/javascript">
+            // This script will render all Plotly graphs dynamically
+            {plotly_script_calls}
+        </script>
     </body>
     </html>
     """
@@ -1140,7 +1155,7 @@ if __name__ == "__main__":
 
     # Ensure necessary subdirectories for new plots exist
     os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'publishers_developers'), exist_ok=True)
-    os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'ratings'), exist_ok=True)
+    os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'ratings'), exist_ok=True) # Corrected line
     os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'seasonality'), exist_ok=True)
     os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'genre_metrics'), exist_ok=True)
     os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'best_games'), exist_ok=True)
@@ -1157,8 +1172,6 @@ if __name__ == "__main__":
         # Generate summary statistics HTML
         summary_stats_html_content = generate_summary_statistics(df)
         
-        # This line was for console output, can be removed if not needed
-        # generate_summary_statistics(df) 
         create_static_plots(df, STATIC_PLOTS_DIR)
         create_interactive_plots(df, HTML_PLOTS_DIR)
         # Pass the summary statistics HTML to the dashboard creation function
