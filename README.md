@@ -1,6 +1,5 @@
 # Video Game Sales Analysis & Prediction
 
-## Table of Contents
 
 ## Table of Contents
 1.  [Project Overview](#project-overview)
@@ -81,7 +80,11 @@ This repository serves as a demonstration of a structured, reproducible, and ins
 *   **Tailwind CSS:** (Used in `dashboard.html`) A utility-first CSS framework for rapid and responsive UI development.
     
 
+
+
 ## File and Directory Structure
+
+# 
 
     .
     ├── data/
@@ -90,49 +93,68 @@ This repository serves as a demonstration of a structured, reproducible, and ins
     │   └── processed/
     │       └── processed_data.csv   # Cleaned and featurized data
     ├── plots/
-    │   ├── static/
+    │   ├── html/
+    │   │   ├── best_games/
+    │   │   │   ├── top_25_critic_score_sales_interactive.html
+    │   │   │   ├── top_25_global_sales_and_scores_interactive.html
+    │   │   │   └── top_25_global_sales_and_scores_interactive.json
     │   │   ├── genre_metrics/
-    │   │   │   ├── critic_score_by_genre_boxplot.png
-    │   │   │   ├── global_sales_by_genre_boxplot_log.png
-    │   │   │   └── user_score_by_genre_boxplot.png
+    │   │   │   ├── critic_score_by_genre_boxplot_interactive.html
+    │   │   │   ├── critic_score_by_genre_boxplot_interactive.json
+    │   │   │   ├── global_sales_by_genre_boxplot_interactive.json
+    │   │   │   ├── global_sales_by_genre_boxplot_interactive_log.html
+    │   │   │   ├── user_score_by_genre_boxplot_interactive.html
+    │   │   │   └── user_score_by_genre_boxplot_interactive.json
     │   │   ├── publishers_developers/
-    │   │   │   ├── top_10_developers_sales.png
-    │   │   │   ├── top_10_publishers_sales.png
-    │   │   │   ├── top_20_publishers_avg_sales.png
-    │   │   │   └── top_20_publishers_game_count.png
+    │   │   │   ├── avg_sales_per_publisher_interactive.html
+    │   │   │   ├── avg_sales_per_publisher_interactive.json
+    │   │   │   ├── publisher_sales_trends_interactive.html
+    │   │   │   ├── publisher_sales_trends_interactive.json
+    │   │   │   ├── top_25_publishers_sales_scores_interactive.html
+    │   │   │   └── top_25_publishers_sales_scores_interactive.json
     │   │   ├── ratings/
-    │   │   │   ├── global_sales_by_rating.png
-    │   │   │   └── rating_distribution_per_genre.png
+    │   │   │   ├── rating_distribution_per_genre_interactive.html
+    │   │   │   ├── rating_distribution_per_genre_interactive.json
+    │   │   │   ├── regional_sales_by_rating_interactive.html
+    │   │   │   └── regional_sales_by_rating_interactive.json
     │   │   ├── seasonality/
-    │   │   │   └── yearly_global_sales_trend.png
-    │   │   ├── correlation_heatmap.png
-    │   │   ├── global_sales_distribution.png
-    │   │   ├── regional_sales_distribution.png
-    │   │   ├── sales_by_platform_static.png
-    │   │   ├── top_genres_static.png
-    │   │   └── year_of_release_distribution.png
-    │   └── html/
-    │       ├── best_games/
-    │       │   └── top_25_global_sales_and_scores_interactive.json
+    │   │   │   ├── yearly_global_sales_trend_interactive.html
+    │   │   │   └── yearly_global_sales_trend_interactive.json
+    │   │   ├── critic_vs_user_score_density_interactive.html
+    │   │   ├── critic_vs_user_score_interactive.html
+    │   │   ├── critic_vs_user_score_scatter_enhanced_interactive.html
+    │   │   ├── critic_vs_user_score_scatter_enhanced_interactive.json
+    │   │   ├── dashboard.html  # Interactive mini-dashboard
+    │   │   ├── regional_sales_by_genre_interactive.html
+    │   │   ├── regional_sales_by_genre_interactive.json
+    │   │   ├── regional_sales_trends_interactive.html
+    │   │   ├── regional_sales_trends_interactive.json
+    │   │   ├── sales_by_platform_interactive.html
+    │   │   ├── sales_by_platform_interactive.json
+    │   │   ├── sales_trends_interactive.html
+    │   │   └── sales_trends_interactive.json
+    │   └── static/
     │       ├── genre_metrics/
-    │       │   ├── critic_score_by_genre_boxplot_interactive.json
-    │       │   ├── global_sales_by_genre_boxplot_interactive.json
-    │       │   └── user_score_by_genre_boxplot_interactive.json
+    │       │   ├── critic_score_by_genre_boxplot.png
+    │       │   └── global_sales_by_genre_boxplot_log.png
     │       ├── publishers_developers/
-    │       │   ├── avg_sales_per_publisher_interactive.json
-    │       │   ├── publisher_sales_trends_interactive.json
-    │       │   └── top_25_publishers_sales_scores_interactive.json
+    │       │   ├── top_10_developers_sales.png
+    │       │   ├── top_10_publishers_sales.png
+    │       │   ├── top_20_publishers_avg_sales.png
+    │       │   └── top_20_publishers_game_count.png
     │       ├── ratings/
-    │       │   ├── rating_distribution_per_genre_interactive.json
-    │       │   └── regional_sales_by_rating_interactive.json
+    │       │   ├── global_sales_by_rating.png
+    │       │   └── rating_distribution_per_genre.png
     │       ├── seasonality/
-    │       │   └── yearly_global_sales_trend_interactive.json
-    │       ├── critic_vs_user_score_scatter_enhanced_interactive.json
-    │       ├── dashboard.html  # Interactive mini-dashboard
-    │       ├── regional_sales_by_genre_interactive.json
-    │       ├── regional_sales_trends_interactive.json
-    │       ├── sales_by_platform_interactive.json
-    │       └── sales_trends_interactive.json
+    │       │   └── yearly_global_sales_trend.png
+    │       ├── best_games/
+    │       │   └── top_25_critic_score_sales_static.png
+    │       ├── correlation_heatmap.png
+    │       ├── global_sales_distribution.png
+    │       ├── regional_sales_distribution.png
+    │       ├── sales_by_platform_static.png
+    │       ├── top_genres_static.png
+    │       └── year_of_release_distribution.png
     ├── scripts/
     │   ├── data_cleaning.py
     │   ├── eda.py
@@ -145,6 +167,7 @@ This repository serves as a demonstration of a structured, reproducible, and ins
     ├── main.py                     # Orchestrates the entire workflow
     └── requirements.txt
     └── README.md
+    
     
 
 ## Getting Started
