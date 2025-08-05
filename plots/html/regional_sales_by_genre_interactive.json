@@ -1,0 +1,1 @@
+{"data": [{"alignmentgroup": "True", "hovertemplate": "Region=NA_Sales<br>Genre=%{x}<br>Total Sales (Millions)=%{y:.2f}<extra></extra>", "legendgroup": "NA_Sales", "marker": {"color": "#636efa", "pattern": {"shape": ""}}, "name": "NA_Sales", "offsetgroup": "NA_Sales", "orientation": "v", "showlegend": true, "textposition": "auto", "x": 
