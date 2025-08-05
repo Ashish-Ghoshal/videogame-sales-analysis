@@ -29,20 +29,105 @@ def load_processed_data(file_path):
 
 def generate_summary_statistics(df):
     """
-    Generates and prints descriptive statistics for the DataFrame.
+    Generates and returns key summary statistics as an HTML string,
+    tailored for a managerial overview.
 
     Args:
         df (pd.DataFrame): The DataFrame for which to generate statistics.
+
+    Returns:
+        str: An HTML string containing key summary statistics.
     """
     if df is None:
-        return
+        return "<p>Error: No data available for summary statistics.</p>"
 
-    print("\n--- Descriptive Statistics ---")
-    print(df.describe(include='all'))
-    print("\n--- Missing Values ---")
-    print(df.isnull().sum())
-    print("\n--- Data Types ---")
-    print(df.info())
+    # --- Key Business Metrics ---
+    total_games = len(df)
+    total_global_sales = df['Global_Sales'].sum()
+    
+    # Ensure scores are numeric before calculating means
+    df['Critic_Score'] = pd.to_numeric(df['Critic_Score'], errors='coerce')
+    df['User_Score'] = pd.to_numeric(df['User_Score'], errors='coerce')
+
+    avg_critic_score = df['Critic_Score'].mean()
+    avg_user_score = df['User_Score'].mean() * 10 # Scale user score to 100 for consistency if not already
+    
+    unique_platforms = df['Platform'].nunique()
+    unique_genres = df['Genre'].nunique()
+    unique_publishers = df['Publisher'].nunique()
+    
+    earliest_year = int(df['Year_of_Release'].min()) if not pd.isna(df['Year_of_Release'].min()) else 'N/A'
+    latest_year = int(df['Year_of_Release'].max()) if not pd.isna(df['Year_of_Release'].max()) else 'N/A'
+
+    # Top 3 Genres by Global Sales
+    top_3_genres = df.groupby('Genre')['Global_Sales'].sum().nlargest(3)
+    top_3_genres_html = ""
+    for genre, sales in top_3_genres.items():
+        top_3_genres_html += f"<li class='flex justify-between items-center'><span class='text-gray-700 font-medium'>{genre}</span> <span class='text-blue-600 font-semibold'>{sales:.2f}M</span></li>"
+
+    # Top 3 Platforms by Global Sales
+    top_3_platforms = df.groupby('Platform')['Global_Sales'].sum().nlargest(3)
+    top_3_platforms_html = ""
+    for platform, sales in top_3_platforms.items():
+        top_3_platforms_html += f"<li class='flex justify-between items-center'><span class='text-gray-700 font-medium'>{platform}</span> <span class='text-blue-600 font-semibold'>{sales:.2f}M</span></li>"
+
+    summary_html = f"""
+    <div class="p-4 bg-white rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Key Dataset Metrics</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div class="bg-indigo-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Total Games Analyzed</p>
+                <p class="text-2xl font-bold text-indigo-700">{total_games:,}</p>
+            </div>
+            <div class="bg-green-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Total Global Sales</p>
+                <p class="text-2xl font-bold text-green-700">{total_global_sales:,.2f}M USD</p>
+            </div>
+            <div class="bg-yellow-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Avg. Critic Score (out of 100)</p>
+                <p class="text-2xl font-bold text-yellow-700">{avg_critic_score:.1f}</p>
+            </div>
+            <div class="bg-red-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Avg. User Score (out of 100)</p>
+                <p class="text-2xl font-bold text-red-700">{avg_user_score:.1f}</p>
+            </div>
+            <div class="bg-purple-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Unique Platforms</p>
+                <p class="text-2xl font-bold text-purple-700">{unique_platforms}</p>
+            </div>
+            <div class="bg-teal-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Unique Genres</p>
+                <p class="text-2xl font-bold text-teal-700">{unique_genres}</p>
+            </div>
+            <div class="bg-orange-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Unique Publishers</p>
+                <p class="text-2xl font-bold text-orange-700">{unique_publishers}</p>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500">Data Range (Years)</p>
+                <p class="text-2xl font-bold text-blue-700">{earliest_year} - {latest_year}</p>
+            </div>
+        </div>
+
+        <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-4 border-b pb-2">Top 3 Genres by Global Sales</h3>
+        <ul class="space-y-2">
+            {top_3_genres_html}
+        </ul>
+        <p class="text-gray-600 text-sm mt-2">
+            These are the genres that have generated the most revenue across all regions.
+        </p>
+
+        <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-4 border-b pb-2">Top 3 Platforms by Global Sales</h3>
+        <ul class="space-y-2">
+            {top_3_platforms_html}
+        </ul>
+        <p class="text-gray-600 text-sm mt-2">
+            These platforms represent the highest revenue generators in the video game market.
+        </p>
+    </div>
+    """
+    return summary_html
+
 
 def create_static_plots(df, plots_dir='plots/static'):
     """
@@ -58,6 +143,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     print(f"\n--- Generating Static Plots in {plots_dir} ---")
     os.makedirs(plots_dir, exist_ok=True)
 
+    # Business Question: What is the overall distribution of game sales?
+    # Insight: Helps understand the common sales figures and identify blockbuster outliers.
     # 1. Global Sales Distribution (Histogram)
     plt.figure(figsize=(10, 6))
     sns.histplot(df['Global_Sales'], bins=50, kde=True)
@@ -70,6 +157,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: global_sales_distribution.png")
 
+    # Business Question: How has the volume of game releases changed over the years?
+    # Insight: Reveals periods of industry growth or specific console generation peaks.
     # 2. Year of Release Distribution (Histogram)
     plt.figure(figsize=(12, 6))
     sns.histplot(df['Year_of_Release'], bins=range(int(df['Year_of_Release'].min()), int(df['Year_of_Release'].max()) + 2), kde=False)
@@ -83,6 +172,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: year_of_release_distribution.png")
 
+    # Business Question: Which regions are the largest markets for video games?
+    # Insight: Provides a quick overview of market dominance by geography.
     # 3. Regional Sales Distribution (Bar Plots)
     regional_sales = df[['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales']].sum()
     plt.figure(figsize=(10, 6))
@@ -95,6 +186,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: regional_sales_distribution.png")
 
+    # Business Question: Which gaming platforms have generated the most revenue?
+    # Insight: Identifies leading platforms and their historical market share.
     # 4. Sales by Top Platforms (Bar Plot)
     top_platforms = df.groupby('Platform')['Global_Sales'].sum().nlargest(10).sort_values(ascending=False)
     plt.figure(figsize=(12, 7))
@@ -108,6 +201,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: sales_by_platform_static.png")
 
+    # Business Question: What are the most commercially successful game genres?
+    # Insight: Helps in understanding market demand and potential for new game development.
     # 5. Sales by Top Genres (Bar Plot)
     top_genres = df.groupby('Genre')['Global_Sales'].sum().nlargest(10).sort_values(ascending=False)
     plt.figure(figsize=(12, 7))
@@ -121,6 +216,9 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: top_genres_static.png")
 
+    # Business Question: What are the linear relationships between numerical game attributes?
+    # Insight: Identifies strong correlations (e.g., between regional sales, or scores and sales)
+    # which can inform predictive modeling and strategic focus.
     # 6. Correlation Heatmap
     numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
     correlation_matrix = df[numerical_cols].corr()
@@ -132,11 +230,13 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: correlation_heatmap.png")
 
-    # ADDITION v8: Publisher and Developer Impact Analysis Static Plots
+    # Publisher and Developer Impact Analysis Static Plots
     print("\n--- Generating Static Plots for Publisher/Developer Impact ---")
     publisher_dev_plots_dir = os.path.join(plots_dir, 'publishers_developers')
     os.makedirs(publisher_dev_plots_dir, exist_ok=True)
 
+    # Business Question: Which publishers have generated the most overall revenue?
+    # Insight: Identifies market leaders and their cumulative impact on the industry.
     # Top 10 Publishers by Total Global Sales
     top_publishers_sales = df.groupby('Publisher')['Global_Sales'].sum().nlargest(10).sort_values(ascending=False)
     plt.figure(figsize=(14, 8))
@@ -150,8 +250,9 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: publishers_developers/top_10_publishers_sales.png")
 
+    # Business Question: Which developers are responsible for the highest-selling games?
+    # Insight: Highlights key development studios and their track record of success.
     # Top 10 Developers by Total Global Sales (requires 'Developer' column to be clean)
-    # Note: Developer column has many missing values, consider imputation or dropping for this analysis
     df_dev = df.dropna(subset=['Developer'])
     if not df_dev.empty:
         top_developers_sales = df_dev.groupby('Developer')['Global_Sales'].sum().nlargest(10).sort_values(ascending=False)
@@ -168,6 +269,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     else:
         print("Skipping Top 10 Developers plot: 'Developer' column has too many missing values after dropping NaNs.")
 
+    # Business Question: Which publishers are most prolific in terms of game releases?
+    # Insight: Differentiates between publishers focusing on many releases vs. fewer, high-impact titles.
     # Distribution of Game Counts per Publisher (Top 20)
     top_publishers_count = df['Publisher'].value_counts().nlargest(20)
     plt.figure(figsize=(14, 8))
@@ -181,6 +284,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: publishers_developers/top_20_publishers_game_count.png")
 
+    # Business Question: Which publishers achieve the highest average sales per game?
+    # Insight: Identifies publishers with a strong track record of producing successful individual titles.
     # Average Sales per Game by Publisher (Top 20)
     avg_sales_per_publisher = df.groupby('Publisher')['Global_Sales'].mean().nlargest(20).sort_values(ascending=False)
     plt.figure(figsize=(14, 8))
@@ -195,13 +300,14 @@ def create_static_plots(df, plots_dir='plots/static'):
     print("Saved: publishers_developers/top_20_publishers_avg_sales.png")
 
 
-    # ADDITION v9: Rating (ESRB/PEGI) Analysis Static Plots
+    # Rating (ESRB/PEGI) Analysis Static Plots
     print("\n--- Generating Static Plots for Rating Analysis ---")
     rating_plots_dir = os.path.join(plots_dir, 'ratings')
     os.makedirs(rating_plots_dir, exist_ok=True)
 
+    # Business Question: Which game ratings (e.g., E, T, M) generate the most revenue globally?
+    # Insight: Helps understand market demand for content suitability.
     # Global Sales Distribution by Rating
-    # Drop NaNs in 'Rating' for this analysis
     df_rating = df.dropna(subset=['Rating'])
     if not df_rating.empty:
         sales_by_rating = df_rating.groupby('Rating')['Global_Sales'].sum().sort_values(ascending=False)
@@ -215,13 +321,13 @@ def create_static_plots(df, plots_dir='plots/static'):
         plt.close()
         print("Saved: ratings/global_sales_by_rating.png")
 
+        # Business Question: How do game ratings distribute across different genres?
+        # Insight: Reveals if certain genres predominantly target specific age groups or content levels.
         # Rating Distribution per Genre (Top Genres)
-        # Select top N genres for readability
         top_genres_list = df_rating['Genre'].value_counts().nlargest(10).index.tolist()
         df_top_genres_ratings = df_rating[df_rating['Genre'].isin(top_genres_list)]
         
         if not df_top_genres_ratings.empty:
-            # Create a cross-tabulation of Genre and Rating
             genre_rating_counts = pd.crosstab(df_top_genres_ratings['Genre'], df_top_genres_ratings['Rating'], normalize='index')
             genre_rating_counts = genre_rating_counts.loc[top_genres_list] # Ensure consistent order
 
@@ -242,26 +348,13 @@ def create_static_plots(df, plots_dir='plots/static'):
         print("Skipping Rating Analysis plots: 'Rating' column has too many missing values after dropping NaNs.")
 
 
-    # ADDITION v10: Release Quarter/Month Analysis Static Plots
+    # Release Quarter/Month Analysis Static Plots
     print("\n--- Generating Static Plots for Release Seasonality ---")
     seasonality_plots_dir = os.path.join(plots_dir, 'seasonality')
     os.makedirs(seasonality_plots_dir, exist_ok=True)
 
-    # Feature Engineering: Extract Month and Quarter from Year_of_Release
-    # This dataset doesn't have a specific release date, so we'll assume sales
-    # are distributed evenly across the year for simplicity or focus on Year_of_Release trends.
-    # If a 'Release_Date' column existed, we would use that.
-    # For now, we'll focus on year-level trends which are already covered,
-    # or if we want to simulate seasonality, we'd need to add dummy data or assumptions.
-    # Given the dataset, direct month/quarter analysis is not feasible without 'Release_Date'.
-    # Instead, we can look at the average sales per game per year to see if there are
-    # trends in game quality/success over time, or focus on the overall yearly sales trend.
-
-    # Re-using the existing global_sales_trend for interactive plot, as it's the most direct
-    # way to show yearly trends. For true seasonality, a 'Release_Date' column is needed.
-
-    # For a static view of yearly sales (already covered by year_of_release_distribution.png,
-    # but can be re-emphasized with total sales per year)
+    # Business Question: How has total global sales evolved over the years?
+    # Insight: Shows overall industry growth or decline trends.
     yearly_global_sales = df.groupby('Year_of_Release')['Global_Sales'].sum().reset_index()
     plt.figure(figsize=(12, 6))
     sns.lineplot(x='Year_of_Release', y='Global_Sales', data=yearly_global_sales, marker='o')
@@ -274,13 +367,93 @@ def create_static_plots(df, plots_dir='plots/static'):
     plt.close()
     print("Saved: seasonality/yearly_global_sales_trend.png")
 
-    # If we had a 'Release_Date' column, we would do something like:
-    # df['Release_Date'] = pd.to_datetime(df['Release_Date'], errors='coerce')
-    # df.dropna(subset=['Release_Date'], inplace=True)
-    # df['Release_Month'] = df['Release_Date'].dt.month
-    # df['Release_Quarter'] = df['Release_Date'].dt.quarter
-    # sales_by_month = df.groupby('Release_Month')['Global_Sales'].sum()
-    # sales_by_quarter = df.groupby('Release_Quarter')['Global_Sales'].sum()
+    # Business Question: How do average critic and user scores vary by genre?
+    # Insight: Helps understand general quality perception across different game types.
+    # Box Plots of Scores/Sales by Genre
+    print("\n--- Generating Box Plots for Scores/Sales by Genre ---")
+    genre_metrics_plots_dir = os.path.join(plots_dir, 'genre_metrics')
+    os.makedirs(genre_metrics_plots_dir, exist_ok=True)
+
+    # Box plot for Critic Score by Genre
+    plt.figure(figsize=(16, 8))
+    sns.boxplot(x='Genre', y='Critic_Score', data=df, palette='pastel', hue='Genre', legend=False)
+    plt.title('Distribution of Critic Scores by Genre')
+    plt.xlabel('Genre')
+    plt.ylabel('Critic Score (out of 100)')
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', alpha=0.75)
+    plt.tight_layout()
+    plt.savefig(os.path.join(genre_metrics_plots_dir, 'critic_score_by_genre_boxplot.png'))
+    plt.close()
+    print("Saved: genre_metrics/critic_score_by_genre_boxplot.png")
+
+    # Box plot for User Score by Genre (using scaled score for consistency)
+    if 'User_Score_Scaled' in df.columns:
+        plt.figure(figsize=(16, 8))
+        sns.boxplot(x='Genre', y='User_Score_Scaled', data=df, palette='pastel', hue='Genre', legend=False)
+        plt.title('Distribution of User Scores (Scaled) by Genre')
+        plt.xlabel('Genre')
+        plt.ylabel('User Score (Scaled to 100)')
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(axis='y', alpha=0.75)
+        plt.tight_layout()
+        plt.savefig(os.path.join(genre_metrics_plots_dir, 'user_score_by_genre_boxplot.png'))
+        plt.close()
+        print("Saved: genre_metrics/user_score_by_genre_boxplot.png")
+    else:
+        print("Skipping User Score by Genre Boxplot: 'User_Score_Scaled' not available.")
+
+    # Box plot for Global Sales by Genre (using log scale due to skewness)
+    plt.figure(figsize=(16, 8))
+    sns.boxplot(x='Genre', y='Global_Sales', data=df, palette='pastel', hue='Genre', legend=False)
+    plt.yscale('log') # Use log scale for sales due to high skewness
+    plt.title('Distribution of Global Sales by Genre (Log Scale)')
+    plt.xlabel('Genre')
+    plt.ylabel('Global Sales (Millions, Log Scale)')
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', alpha=0.75)
+    plt.tight_layout()
+    plt.savefig(os.path.join(genre_metrics_plots_dir, 'global_sales_by_genre_boxplot_log.png'))
+    plt.close()
+    print("Saved: genre_metrics/global_sales_by_genre_boxplot_log.png")
+
+    # Best Games by Critic Score and Global Sales (Static)
+    print("\n--- Generating Best Games by Critic Score and Global Sales Plot ---")
+    best_games_plots_dir = os.path.join(plots_dir, 'best_games')
+    os.makedirs(best_games_plots_dir, exist_ok=True)
+
+    # Business Question: Which games have achieved both high critic scores and significant global sales?
+    # Insight: Identifies critical and commercial successes, potentially revealing common characteristics.
+    # Prepare data: Drop NaNs in Critic_Score and Global_Sales, sort, and select top 25
+    t25_cr = df.dropna(subset=['Critic_Score', 'Global_Sales']).sort_values(by='Critic_Score', ascending=False).head(25)
+
+    fig, ax = plt.subplots(figsize=(20, 10))
+    ax2 = ax.twinx() # Create a twin Y-axis for Global Sales
+
+    # Bar plot for Critic Score
+    sns.barplot(x='Name', y='Critic_Score', data=t25_cr, color='skyblue', label="Critic Score", ax=ax, alpha=0.7)
+    ax.set_ylabel("Critic Score (out of 100)", color='skyblue')
+    ax.tick_params(axis='y', labelcolor='skyblue')
+
+    # Line plot for Global Sales
+    sns.lineplot(x='Name', y='Global_Sales', data=t25_cr, color='green', label="Global Sales", marker='o', linestyle='-', linewidth=2, ax=ax2)
+    ax2.set_ylabel("Global Sales (Millions)", color='green')
+    ax2.tick_params(axis='y', labelcolor='green')
+
+    # Set title and x-axis labels
+    plt.title("Top 25 Games by Critic Score and Global Sales", fontsize=16)
+    ax.set_xlabel("Game Name", fontsize=12)
+    ax.tick_params(axis='x', rotation=90, labelsize=10) # Rotate labels for readability
+
+    # Combine legends
+    lines, labels = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax2.legend(lines + lines2, labels + labels2, loc='upper right', bbox_to_anchor=(1.15, 1))
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(best_games_plots_dir, 'top_25_critic_score_sales_static.png'))
+    plt.close()
+    print("Saved: best_games/top_25_critic_score_sales_static.png")
 
 
 def create_interactive_plots(df, plots_dir='plots/html'):
@@ -297,8 +470,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
     print(f"\n--- Generating Interactive Plots in {plots_dir} ---")
     os.makedirs(plots_dir, exist_ok=True)
 
+    # Business Question: How do genre sales vary across different regions?
+    # Insight: Identifies regional market preferences for game genres.
     # 1. Regional Sales by Genre (Interactive Grouped Bar Chart)
-    # Aggregate sales by Genre and Region
     regional_genre_sales = df.groupby('Genre')[['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales']].sum().reset_index()
     fig_regional_genre = px.bar(
         regional_genre_sales,
@@ -313,8 +487,9 @@ def create_interactive_plots(df, plots_dir='plots/html'):
     fig_regional_genre.write_html(os.path.join(plots_dir, 'regional_sales_by_genre_interactive.html'))
     print("Saved: regional_sales_by_genre_interactive.html")
 
+    # Business Question: How have regional and global sales trends evolved over time?
+    # Insight: Shows market growth, decline, and relative importance of regions over years.
     # 2. Regional Sales Trends Over Time (Interactive Line Plot)
-    # Aggregate sales by Year_of_Release and Region
     regional_year_sales = df.groupby('Year_of_Release')[['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales', 'Global_Sales']].sum().reset_index()
     fig_regional_trends = px.line(
         regional_year_sales,
@@ -328,6 +503,8 @@ def create_interactive_plots(df, plots_dir='plots/html'):
     fig_regional_trends.write_html(os.path.join(plots_dir, 'regional_sales_trends_interactive.html'))
     print("Saved: regional_sales_trends_interactive.html")
 
+    # Business Question: Which platforms have generated the most global sales?
+    # Insight: Identifies dominant platforms in the overall market.
     # 3. Sales by Platform (Interactive Bar Chart)
     platform_sales = df.groupby('Platform')['Global_Sales'].sum().reset_index().sort_values(by='Global_Sales', ascending=False)
     fig_platform_sales = px.bar(
@@ -342,6 +519,8 @@ def create_interactive_plots(df, plots_dir='plots/html'):
     fig_platform_sales.write_html(os.path.join(plots_dir, 'sales_by_platform_interactive.html'))
     print("Saved: sales_by_platform_interactive.html")
 
+    # Business Question: What is the overall trend of global video game sales over time?
+    # Insight: Shows the industry's historical growth or decline.
     # 4. Global Sales Trends Over Time (Interactive Line Plot)
     global_sales_trend = df.groupby('Year_of_Release')['Global_Sales'].sum().reset_index()
     fig_global_trend = px.line(
@@ -352,24 +531,23 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         labels={'Global_Sales': 'Total Global Sales (Millions)'},
         hover_data={'Year_of_Release': True, 'Global_Sales': ':.2f'}
     )
-    fig_global_trend.update_layout(xaxis_title="Year of Release", yaxis_title="Total Global Sales (Millions)")
+    fig_global_trend.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
     fig_global_trend.write_html(os.path.join(plots_dir, 'sales_trends_interactive.html'))
     print("Saved: sales_trends_interactive.html")
 
+    # Business Question: How do critic and user scores relate, and how does this impact sales?
+    # Insight: Reveals agreement/disagreement between critics and users, and how this correlates with commercial success.
     # 5. Critic vs User Score (Interactive Scatter Plot) with Scaled User Score and Agreement Line
-    # ADDITION v5: Scale User_Score for better comparison
-    # Ensure 'User_Score' is numeric before scaling. This should be handled in data_cleaning.py,
-    # but a defensive check here is good practice.
     if 'User_Score' in df.columns and pd.api.types.is_numeric_dtype(df['User_Score']):
         df['User_Score_Scaled'] = df['User_Score'] * 10
         print("Engineered 'User_Score_Scaled' for visualization.")
     else:
-        df['User_Score_Scaled'] = np.nan # Or handle error appropriately
+        df['User_Score_Scaled'] = np.nan
         print("Warning: 'User_Score' is not numeric, cannot create 'User_Score_Scaled'.")
 
     score_df = df.dropna(subset=['Critic_Score', 'User_Score_Scaled', 'Global_Sales'])
 
-    fig_scores = px.scatter(
+    fig_scores_scatter_enhanced = px.scatter(
         score_df,
         x='Critic_Score',
         y='User_Score_Scaled', # Use the scaled score
@@ -379,32 +557,31 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         hover_data={'Platform': True, 'Publisher': True, 'Year_of_Release': True,
                     'Critic_Score': ':.1f', 'User_Score': ':.1f', # Keep original User_Score in hover
                     'Global_Sales': ':.2f', 'User_Score_Scaled': ':.1f'},
-        title='Critic Score vs User Score (Scaled for Comparison, Sized by Global Sales)',
-        labels={'Critic_Score': 'Critic Score (out of 100)', 'User_Score_Scaled': 'User Score (Scaled to 100)'}
+        title='Critic Score vs User Score (Scaled, Sized by Sales, by Genre)',
+        labels={'Critic_Score': 'Critic Score (out of 100)', 'User_Score_Scaled': 'User Score (Scaled to 100)'},
+        opacity=0.6, # Make points semi-transparent to see density
     )
-
-    # Add a line of perfect agreement (y=x)
-    # Ensure the min/max for the line are based on the actual data range for Critic_Score
     min_score = score_df['Critic_Score'].min()
     max_score = score_df['Critic_Score'].max()
-    fig_scores.add_trace(go.Scatter(
+    fig_scores_scatter_enhanced.add_trace(go.Scatter(
         x=[min_score, max_score],
         y=[min_score, max_score],
         mode='lines',
         name='Perfect Agreement',
         line=dict(color='red', dash='dash', width=2)
     ))
+    fig_scores_scatter_enhanced.write_html(os.path.join(plots_dir, 'critic_vs_user_score_scatter_enhanced_interactive.html'))
+    print("Saved: critic_vs_user_score_scatter_enhanced_interactive.html")
 
-    fig_scores.write_html(os.path.join(plots_dir, 'critic_vs_user_score_interactive.html'))
-    print("Saved: critic_vs_user_score_interactive.html")
 
-    # ADDITION v11: Publisher and Developer Impact Analysis Interactive Plots
+    # Publisher and Developer Impact Analysis Interactive Plots
     print("\n--- Generating Interactive Plots for Publisher/Developer Impact ---")
     publisher_dev_plots_dir_html = os.path.join(plots_dir, 'publishers_developers')
     os.makedirs(publisher_dev_plots_dir_html, exist_ok=True)
 
+    # Business Question: How do the sales of top publishers trend over time?
+    # Insight: Reveals the long-term performance and market presence of major publishers.
     # Publisher Sales Trends Over Time (Top N Publishers)
-    # Select top 10 publishers by global sales for this interactive plot
     top_publishers = df.groupby('Publisher')['Global_Sales'].sum().nlargest(10).index.tolist()
     df_top_publishers = df[df['Publisher'].isin(top_publishers)]
     publisher_yearly_sales = df_top_publishers.groupby(['Year_of_Release', 'Publisher'])['Global_Sales'].sum().reset_index()
@@ -418,15 +595,122 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         labels={'Global_Sales': 'Total Global Sales (Millions)'},
         hover_data={'Year_of_Release': True, 'Global_Sales': ':.2f', 'Publisher': True}
     )
-    fig_publisher_trends.update_layout(xaxis_title="Year of Release", yaxis_title="Total Global Sales (Millions)")
+    fig_publisher_trends.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
     fig_publisher_trends.write_html(os.path.join(publisher_dev_plots_dir_html, 'publisher_sales_trends_interactive.html'))
     print("Saved: publishers_developers/publisher_sales_trends_interactive.html")
 
-    # ADDITION v12: Rating (ESRB/PEGI) Analysis Interactive Plots
+    # Business Question: What is the average sales performance per game for top publishers?
+    # Insight: Helps identify publishers that consistently produce high-quality or high-selling titles.
+    # Interactive Bar Chart for Average Sales per Game by Publisher
+    avg_sales_per_publisher_interactive = df.groupby('Publisher')['Global_Sales'].mean().nlargest(20).sort_values(ascending=False).reset_index()
+    fig_avg_sales_publisher = px.bar(
+        avg_sales_per_publisher_interactive,
+        x='Publisher',
+        y='Global_Sales',
+        title='Top 20 Publishers by Average Global Sales per Game',
+        labels={'Global_Sales': 'Average Global Sales (Millions)'},
+        hover_data={'Publisher': True, 'Global_Sales': ':.2f'}
+    )
+    fig_avg_sales_publisher.update_layout(xaxis_tickangle=-45)
+    fig_avg_sales_publisher.write_html(os.path.join(publisher_dev_plots_dir_html, 'avg_sales_per_publisher_interactive.html'))
+    print("Saved: publishers_developers/avg_sales_per_publisher_interactive.html")
+
+    # NEW PLOT: Top 25 Publishers by Global Sales with Average Critic and User Scores
+    print("\n--- Generating Interactive Top 25 Publishers by Global Sales and Scores Plot ---")
+    # Business Question: Which publishers are the highest-selling globally, and how do their average critic and user scores compare?
+    # Insight: Identifies top commercial publishers and the alignment of average critical/user reception with their overall sales.
+    
+    # Data preparation: Aggregate by Publisher
+    publisher_metrics = df.groupby('Publisher').agg(
+        Global_Sales=('Global_Sales', 'sum'),
+        Critic_Score=('Critic_Score', 'mean'),
+        User_Score=('User_Score', 'mean')
+    ).reset_index()
+
+    # Scale Critic_Score to be out of 10
+    publisher_metrics['Critic_Score'] = publisher_metrics['Critic_Score'] / 10
+
+    # Drop NaNs that might result from aggregation if a publisher has no scores
+    publisher_metrics.dropna(subset=['Critic_Score', 'User_Score', 'Global_Sales'], inplace=True)
+
+    # Get top 25 publishers by Global_Sales
+    t25_publishers = publisher_metrics.sort_values('Global_Sales', ascending=False).head(25).reset_index(drop=True)
+
+    # Create a figure with secondary Y-axis
+    fig_top_publishers_sales_scores = go.Figure()
+
+    # Add bar trace for Global Sales
+    fig_top_publishers_sales_scores.add_trace(go.Bar(
+        x=t25_publishers['Publisher'],
+        y=t25_publishers['Global_Sales'],
+        name='Total Global Sales',
+        marker_color='rgba(0,0,0,0)', # Transparent fill
+        marker_line_color='blue', # Border color
+        marker_line_width=1,
+        opacity=0.8,
+        hoverinfo='x+y',
+        hovertemplate='<b>%{x}</b><br>Total Sales: %{y:.2f}M<extra></extra>'
+    ))
+
+    # Add scatter trace for Critic Score on secondary Y-axis
+    fig_top_publishers_sales_scores.add_trace(go.Scatter(
+        x=t25_publishers['Publisher'],
+        y=t25_publishers['Critic_Score'],
+        name='Avg Critic Score',
+        mode='markers',
+        marker=dict(color='red', size=10, symbol='circle'),
+        yaxis='y2',
+        hoverinfo='x+y',
+        hovertemplate='<b>%{x}</b><br>Avg Critic Score: %{y:.1f}<extra></extra>'
+    ))
+
+    # Add scatter trace for User Score on secondary Y-axis
+    fig_top_publishers_sales_scores.add_trace(go.Scatter(
+        x=t25_publishers['Publisher'],
+        y=t25_publishers['User_Score'],
+        name='Avg User Score',
+        mode='markers',
+        marker=dict(color='green', size=10, symbol='circle'),
+        yaxis='y2',
+        hoverinfo='x+y',
+        hovertemplate='<b>%{x}</b><br>Avg User Score: %{y:.1f}<extra></extra>'
+    ))
+
+    # Update layout for dual Y-axes
+    fig_top_publishers_sales_scores.update_layout(
+        title_text='Top 25 Publishers by Global Sales with Average Critic and User Scores (Interactive)',
+        xaxis_title='Publisher Name',
+        yaxis=dict(
+            title='Total Global Sales (Millions)',
+            title_font=dict(color='blue'),
+            tickfont=dict(color='blue'),
+            side='left'
+        ),
+        yaxis2=dict(
+            title='Average Score (out of 10)',
+            title_font=dict(color='black'),
+            tickfont=dict(color='black'),
+            overlaying='y',
+            side='right',
+            range=[0, 10] # Scores are out of 10
+        ),
+        hovermode='x unified',
+        xaxis_tickangle=-45,
+        legend=dict(x=1.05, y=1, xanchor='left', yanchor='top'),
+        height=700 # Increased height for better readability
+    )
+
+    fig_top_publishers_sales_scores.write_html(os.path.join(publisher_dev_plots_dir_html, 'top_25_publishers_sales_scores_interactive.html'))
+    print("Saved: publishers_developers/top_25_publishers_sales_scores_interactive.html")
+
+
+    # Rating (ESRB/PEGI) Analysis Interactive Plots
     print("\n--- Generating Interactive Plots for Rating Analysis ---")
     rating_plots_dir_html = os.path.join(plots_dir, 'ratings')
     os.makedirs(rating_plots_dir_html, exist_ok=True)
 
+    # Business Question: How do sales of games with different ratings vary across regions?
+    # Insight: Understands regional market acceptance and demand for specific content ratings.
     # Sales by Rating per Region (Interactive Grouped Bar Chart)
     df_rating_sales = df.dropna(subset=['Rating'])
     if not df_rating_sales.empty:
@@ -446,15 +730,42 @@ def create_interactive_plots(df, plots_dir='plots/html'):
     else:
         print("Skipping interactive Regional Sales by Rating plot: 'Rating' column has too many missing values after dropping NaNs.")
 
+    # Business Question: What is the distribution of game ratings within the most popular genres?
+    # Insight: Helps identify content trends and target audiences within successful genres.
+    # Interactive Stacked Bar Chart for Rating Distribution per Genre
+    if not df_rating_sales.empty:
+        top_genres_list_for_rating = df_rating_sales['Genre'].value_counts().nlargest(10).index.tolist()
+        df_top_genres_ratings_interactive = df_rating_sales[df_rating_sales['Genre'].isin(top_genres_list_for_rating)]
 
-    # ADDITION v13: Release Quarter/Month Analysis Interactive Plots
+        if not df_top_genres_ratings_interactive.empty:
+            genre_rating_counts_for_plotly = df_top_genres_ratings_interactive.groupby(['Genre', 'Rating']).size().reset_index(name='count')
+
+            fig_genre_rating_stacked = px.bar(
+                genre_rating_counts_for_plotly,
+                x='Genre',
+                y='count',
+                color='Rating',
+                title='Rating Distribution within Top 10 Genres (Interactive Stacked Bar)',
+                labels={'Genre': 'Genre', 'count': 'Number of Games'},
+                hover_data={'Rating': True, 'count': True},
+                height=600
+            )
+            fig_genre_rating_stacked.update_layout(xaxis_tickangle=-45)
+            fig_genre_rating_stacked.write_html(os.path.join(rating_plots_dir_html, 'rating_distribution_per_genre_interactive.html'))
+            print("Saved: ratings/rating_distribution_per_genre_interactive.html")
+        else:
+            print("Skipping interactive Rating Distribution per Genre plot: No data for top genres with ratings.")
+    else:
+        print("Skipping interactive Rating Distribution per Genre plot: 'Rating' column has too many missing values after dropping NaNs.")
+
+
+    # Release Quarter/Month Analysis Interactive Plots
     print("\n--- Generating Interactive Plots for Release Seasonality ---")
     seasonality_plots_dir_html = os.path.join(plots_dir, 'seasonality')
     os.makedirs(seasonality_plots_dir_html, exist_ok=True)
 
-    # For interactive yearly global sales trend (already covered by fig_global_trend, but can be a dedicated plot)
-    # This is essentially a re-emphasis of the existing global sales trend, as direct month/quarter
-    # analysis requires a 'Release_Date' column not present in the dataset.
+    # Business Question: What is the overall trend of global video game sales over time?
+    # Insight: Shows the industry's historical growth or decline.
     yearly_global_sales_interactive = df.groupby('Year_of_Release')['Global_Sales'].sum().reset_index()
     fig_yearly_sales_interactive = px.line(
         yearly_global_sales_interactive,
@@ -464,16 +775,152 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         labels={'Global_Sales': 'Total Global Sales (Millions)'},
         hover_data={'Year_of_Release': True, 'Global_Sales': ':.2f'}
     )
+    fig_yearly_sales_interactive.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
     fig_yearly_sales_interactive.write_html(os.path.join(seasonality_plots_dir_html, 'yearly_global_sales_trend_interactive.html'))
     print("Saved: seasonality/yearly_global_sales_trend_interactive.html")
 
+    # Business Question: How do average critic and user scores vary by genre?
+    # Insight: Helps understand general quality perception across different game types.
+    # Interactive Box Plots of Scores/Sales by Genre
+    print("\n--- Generating Interactive Box Plots for Scores/Sales by Genre ---")
+    genre_metrics_plots_dir_html = os.path.join(plots_dir, 'genre_metrics')
+    os.makedirs(genre_metrics_plots_dir_html, exist_ok=True)
 
-def create_dashboard(plots_dir='plots/html'):
+    # Interactive Box plot for Critic Score by Genre
+    fig_critic_score_genre_box = px.box(
+        df,
+        x='Genre',
+        y='Critic_Score',
+        title='Distribution of Critic Scores by Genre (Interactive)',
+        labels={'Critic_Score': 'Critic Score (out of 100)'},
+        hover_data={'Name': True, 'Platform': True, 'Global_Sales': ':.2f'}
+    )
+    fig_critic_score_genre_box.update_layout(xaxis_tickangle=-45)
+    fig_critic_score_genre_box.write_html(os.path.join(genre_metrics_plots_dir_html, 'critic_score_by_genre_boxplot_interactive.html'))
+    print("Saved: genre_metrics/critic_score_by_genre_boxplot_interactive.html")
+
+    # Interactive Box plot for User Score by Genre (using scaled score)
+    if 'User_Score_Scaled' in df.columns:
+        fig_user_score_genre_box = px.box(
+            df,
+            x='Genre',
+            y='User_Score_Scaled',
+            title='Distribution of User Scores (Scaled) by Genre (Interactive)',
+            labels={'User_Score_Scaled': 'User Score (Scaled to 100)'},
+            hover_data={'Name': True, 'Platform': True, 'Global_Sales': ':.2f'}
+        )
+        fig_user_score_genre_box.update_layout(xaxis_tickangle=-45)
+        fig_user_score_genre_box.write_html(os.path.join(genre_metrics_plots_dir_html, 'user_score_by_genre_boxplot_interactive.html'))
+        print("Saved: genre_metrics/user_score_by_genre_boxplot_interactive.html")
+    else:
+        print("Skipping Interactive User Score by Genre Boxplot: 'User_Score_Scaled' not available.")
+
+    # Interactive Box plot for Global Sales by Genre (using log scale)
+    fig_global_sales_genre_box = px.box(
+        df,
+        x='Genre',
+        y='Global_Sales',
+        title='Distribution of Global Sales by Genre (Interactive, Log Scale)',
+        labels={'Global_Sales': 'Global Sales (Millions, Log Scale)'},
+        log_y=True, # Apply log scale to Y-axis
+        hover_data={'Name': True, 'Platform': True, 'Critic_Score': ':.1f'}
+    )
+    fig_global_sales_genre_box.update_layout(xaxis_tickangle=-45)
+    fig_global_sales_genre_box.write_html(os.path.join(genre_metrics_plots_dir_html, 'global_sales_by_genre_boxplot_interactive_log.html'))
+    print("Saved: genre_metrics/global_sales_by_genre_boxplot_interactive_log.html")
+
+    # Top 25 Games by Global Sales with Critic and User Scores
+    print("\n--- Generating Interactive Top 25 Games by Global Sales and Scores Plot ---")
+    best_games_plots_dir_html = os.path.join(plots_dir, 'best_games')
+    os.makedirs(best_games_plots_dir_html, exist_ok=True)
+
+    # Business Question: Which games are the highest-selling globally, and how do their critic and user scores compare?
+    # Insight: Identifies top commercial successes and the alignment of critical/user reception with sales.
+    # Data preparation as per user's notebook code
+    df['User_Score'] = pd.to_numeric(df['User_Score'], errors='coerce')
+
+    ucs_name = df.groupby('Name').agg({
+        'Critic_Score': 'mean',
+        'User_Score': 'mean',
+        'Global_Sales': 'sum'
+    }).reset_index()
+
+    ucs_name['Critic_Score'] = ucs_name['Critic_Score'] / 10
+
+    ucs_name.dropna(subset=['Critic_Score', 'User_Score', 'Global_Sales'], inplace=True)
+
+    t25_name = ucs_name.sort_values('Global_Sales', ascending=False).head(25).reset_index(drop=True)
+
+    fig_top_sales_scores = go.Figure()
+
+    fig_top_sales_scores.add_trace(go.Bar(
+        x=t25_name['Name'],
+        y=t25_name['Global_Sales'],
+        name='Global Sales',
+        marker_color='rgba(0,0,0,0)',
+        marker_line_color='blue',
+        marker_line_width=1,
+        opacity=0.8,
+        hoverinfo='x+y',
+        hovertemplate='<b>%{x}</b><br>Global Sales: %{y:.2f}M<extra></extra>'
+    ))
+
+    fig_top_sales_scores.add_trace(go.Scatter(
+        x=t25_name['Name'],
+        y=t25_name['Critic_Score'],
+        name='Critic Score',
+        mode='markers',
+        marker=dict(color='red', size=10, symbol='circle'),
+        yaxis='y2',
+        hoverinfo='x+y',
+        hovertemplate='<b>%{x}</b><br>Critic Score: %{y:.1f}<extra></extra>'
+    ))
+
+    fig_top_sales_scores.add_trace(go.Scatter(
+        x=t25_name['Name'],
+        y=t25_name['User_Score'],
+        name='User Score',
+        mode='markers',
+        marker=dict(color='green', size=10, symbol='circle'),
+        yaxis='y2',
+        hoverinfo='x+y',
+        hovertemplate='<b>%{x}</b><br>User Score: %{y:.1f}<extra></extra>'
+    ))
+
+    fig_top_sales_scores.update_layout(
+        title_text='Top 25 Games by Global Sales with Critic and User Scores (Interactive)',
+        xaxis_title='Game Name',
+        yaxis=dict(
+            title='Global Sales (Millions)',
+            title_font=dict(color='blue'),
+            tickfont=dict(color='blue'),
+            side='left'
+        ),
+        yaxis2=dict(
+            title='Score (out of 10)',
+            title_font=dict(color='black'),
+            tickfont=dict(color='black'),
+            overlaying='y',
+            side='right',
+            range=[0, 10]
+        ),
+        hovermode='x unified',
+        xaxis_tickangle=-45,
+        legend=dict(x=1.05, y=1, xanchor='left', yanchor='top'),
+        height=700 # Increased height for better readability
+    )
+
+    fig_top_sales_scores.write_html(os.path.join(best_games_plots_dir_html, 'top_25_global_sales_and_scores_interactive.html'))
+    print("Saved: best_games/top_25_global_sales_and_scores_interactive.html")
+
+
+def create_dashboard(summary_stats_html, plots_dir='plots/html'):
     """
     Creates a single HTML dashboard file that embeds the interactive Plotly graphs.
     This dashboard provides a consolidated view of key insights.
 
     Args:
+        summary_stats_html (str): HTML string containing summary statistics.
         plots_dir (str): Directory where interactive plots are saved and dashboard will be saved.
     """
     print(f"\n--- Creating Interactive Dashboard in {plots_dir} ---")
@@ -485,18 +932,23 @@ def create_dashboard(plots_dir='plots/html'):
         'regional_sales_trends': 'regional_sales_trends_interactive.html',
         'sales_by_platform': 'sales_by_platform_interactive.html',
         'sales_trends': 'sales_trends_interactive.html',
-        'critic_vs_user_score': 'critic_vs_user_score_interactive.html',
-        # ADDITION v14: New interactive plots for dashboard
+        'critic_vs_user_score': 'critic_vs_user_score_scatter_enhanced_interactive.html',
         'publisher_sales_trends': 'publishers_developers/publisher_sales_trends_interactive.html',
+        'avg_sales_per_publisher': 'publishers_developers/avg_sales_per_publisher_interactive.html',
         'regional_sales_by_rating': 'ratings/regional_sales_by_rating_interactive.html',
-        'yearly_global_sales_trend_interactive': 'seasonality/yearly_global_sales_trend_interactive.html'
+        'rating_distribution_per_genre_interactive': 'ratings/rating_distribution_per_genre_interactive.html',
+        'yearly_global_sales_trend_interactive': 'seasonality/yearly_global_sales_trend_interactive.html',
+        'critic_score_by_genre_boxplot_interactive': 'genre_metrics/critic_score_by_genre_boxplot_interactive.html',
+        'user_score_by_genre_boxplot_interactive': 'genre_metrics/user_score_by_genre_boxplot_interactive.html',
+        'global_sales_by_genre_boxplot_interactive_log': 'genre_metrics/global_sales_by_genre_boxplot_interactive_log.html',
+        'top_25_global_sales_and_scores_interactive': 'best_games/top_25_global_sales_and_scores_interactive.html',
+        'top_25_publishers_sales_scores_interactive': 'publishers_developers/top_25_publishers_sales_scores_interactive.html'
     }
 
     # Read content of each HTML plot
     plot_contents = {}
     for key, filename in plot_files.items():
         file_path = os.path.join(plots_dir, filename)
-        # Check for existence of the file before trying to read it
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 plot_contents[key] = f.read()
@@ -506,7 +958,6 @@ def create_dashboard(plots_dir='plots/html'):
 
 
     # HTML structure for the dashboard
-    # The dashboard HTML is updated to include new sections for the new plots.
     dashboard_html = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -548,6 +999,45 @@ def create_dashboard(plots_dir='plots/html'):
                 height: auto !important;
                 min-height: 400px; /* Ensure a minimum height for visibility */
             }}
+            ul.insight-list {{
+                list-style: none; /* Remove default bullet */
+                padding-left: 0;
+            }}
+            ul.insight-list li {{
+                position: relative;
+                padding-left: 1.5em; /* Space for custom bullet */
+                margin-bottom: 0.5em;
+            }}
+            ul.insight-list li::before {{
+                content: '🎮'; /* Custom emoji bullet */
+                position: absolute;
+                left: 0;
+                color: #4F46E5; /* A distinct color */
+                font-size: 1.2em;
+                line-height: 1;
+            }}
+            /* Table styling for summary statistics */
+            .table-auto {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 1rem;
+            }}
+            .table-auto th, .table-auto td {{
+                border: 1px solid #e5e7eb;
+                padding: 0.75rem;
+                text-align: left;
+            }}
+            .table-auto th {{
+                background-color: #f9fafb;
+                font-weight: 600;
+                color: #374151;
+            }}
+            .table-auto tbody tr:nth-child(odd) {{
+                background-color: #f9fafb;
+            }}
+            .table-auto tbody tr:hover {{
+                background-color: #f3f4f6;
+            }}
         </style>
     </head>
     <body class="p-4">
@@ -557,6 +1047,11 @@ def create_dashboard(plots_dir='plots/html'):
             </h1>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card col-span-2">
+                    <h2 class="card-title">Dataset Overview: Summary Statistics</h2>
+                    {summary_stats_html}
+                </div>
+
                 <div class="card col-span-2">
                     <h2 class="card-title">Regional Sales by Genre</h2>
                     {plot_contents['regional_sales_by_genre']}
@@ -579,24 +1074,50 @@ def create_dashboard(plots_dir='plots/html'):
 
                 <div class="card col-span-2">
                     <h2 class="card-title">Critic Score vs User Score (Scaled for Comparison, Sized by Global Sales)</h2>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Enhanced Scatter Plot (with opacity for density):</h3>
                     {plot_contents['critic_vs_user_score']}
                 </div>
 
-                <!-- ADDITION v15: New Sections for Publisher/Developer, Rating, and Seasonality -->
                 <div class="card col-span-2">
-                    <h2 class="card-title">Publisher Sales Trends Over Time</h2>
+                    <h2 class="card-title">Publisher and Developer Impact</h2>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Publisher Sales Trends Over Time:</h3>
                     {plot_contents['publisher_sales_trends']}
+                    <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Average Sales per Game by Publisher:</h3>
+                    {plot_contents['avg_sales_per_publisher']}
+                    <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Top 25 Publishers by Global Sales with Average Critic and User Scores:</h3>
+                    {plot_contents['top_25_publishers_sales_scores_interactive']}
                 </div>
 
                 <div class="card col-span-2">
-                    <h2 class="card-title">Regional Sales by Game Rating</h2>
+                    <h2 class="card-title">Game Rating Analysis</h2>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Regional Sales by Game Rating:</h3>
                     {plot_contents['regional_sales_by_rating']}
+                    <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Rating Distribution within Top 10 Genres:</h3>
+                    {plot_contents['rating_distribution_per_genre_interactive']}
                 </div>
 
                 <div class="card col-span-2">
-                    <h2 class="card-title">Total Global Sales Trend by Year (Interactive)</h2>
+                    <h2 class="card-title">Genre Performance Metrics</h2>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Distribution of Critic Scores by Genre:</h3>
+                    {plot_contents['critic_score_by_genre_boxplot_interactive']}
+                    <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Distribution of User Scores (Scaled) by Genre:</h3>
+                    {plot_contents['user_score_by_genre_boxplot_interactive']}
+                    <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Distribution of Global Sales by Genre (Log Scale):</h3>
+                    {plot_contents['global_sales_by_genre_boxplot_interactive_log']}
+                </div>
+
+                <div class="card col-span-2">
+                    <h2 class="card-title">Overall Sales Trends</h2>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Global Sales Trend by Year:</h3>
                     {plot_contents['yearly_global_sales_trend_interactive']}
                 </div>
+
+                <div class="card col-span-2">
+                    <h2 class="card-title">Top Performing Games</h2>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Top 25 Games by Global Sales with Critic and User Scores:</h3>
+                    {plot_contents['top_25_global_sales_and_scores_interactive']}
+                </div>
+
             </div>
 
             <footer class="text-center text-gray-500 mt-8 text-sm">
@@ -621,14 +1142,24 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'publishers_developers'), exist_ok=True)
     os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'ratings'), exist_ok=True)
     os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'seasonality'), exist_ok=True)
+    os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'genre_metrics'), exist_ok=True)
+    os.makedirs(os.path.join(STATIC_PLOTS_DIR, 'best_games'), exist_ok=True)
+
     os.makedirs(os.path.join(HTML_PLOTS_DIR, 'publishers_developers'), exist_ok=True)
     os.makedirs(os.path.join(HTML_PLOTS_DIR, 'ratings'), exist_ok=True)
     os.makedirs(os.path.join(HTML_PLOTS_DIR, 'seasonality'), exist_ok=True)
+    os.makedirs(os.path.join(HTML_PLOTS_DIR, 'genre_metrics'), exist_ok=True)
+    os.makedirs(os.path.join(HTML_PLOTS_DIR, 'best_games'), exist_ok=True)
 
 
     df = load_processed_data(PROCESSED_DATA_PATH)
     if df is not None:
-        generate_summary_statistics(df)
+        # Generate summary statistics HTML
+        summary_stats_html_content = generate_summary_statistics(df)
+        
+        # This line was for console output, can be removed if not needed
+        # generate_summary_statistics(df) 
         create_static_plots(df, STATIC_PLOTS_DIR)
         create_interactive_plots(df, HTML_PLOTS_DIR)
-        create_dashboard(HTML_PLOTS_DIR)
+        # Pass the summary statistics HTML to the dashboard creation function
+        create_dashboard(summary_stats_html_content, HTML_PLOTS_DIR)
