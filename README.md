@@ -1,5 +1,29 @@
 # Video Game Sales Analysis & Prediction
 
+## Table of Contents
+
+## Table of Contents
+1.  [Project Overview](#project-overview)
+2.  [Features](#features)
+3.  [Technologies Used](#technologies-used)
+4.  [File and Directory Structure](#file-and-directory-structure)
+5.  [Getting Started](#getting-started)
+    * [Prerequisites](#prerequisites)
+    * [Installation](#installation)
+    * [Download the Dataset](#download-the-dataset)
+    * [Usage](#usage)
+6.  [Exploratory Data Analysis (EDA) Insights](#exploratory-data-analysis-eda-insights)
+    * [Overall Sales and Release Trends](#overall-sales-and-release-trends)
+    * [Platform and Genre Performance](#platform-and-genre-performance)
+    * [Critic vs. User Scores](#critic-vs-user-scores)
+    * [Publisher and Developer Impact](#publisher-and-developer-impact)
+    * [Game Rating Analysis](#game-rating-analysis)
+7.  [Predictive Model](#predictive-model)
+8.  [Future Enhancements](#future-enhancements)
+9.  [Contributing](#contributing)
+10. [License](#license)
+
+
 ## Project Overview
 
 This repository contains a comprehensive data science project focused on analyzing the dynamics of the video game industry through sales and ratings data. The primary objective is to gain a deep understanding of factors influencing game success, identify trends across platforms and genres, and build a predictive model for global sales.
@@ -25,9 +49,9 @@ This repository serves as a demonstration of a structured, reproducible, and ins
         
     *   Creation of a diverse set of static visualizations (histograms, bar plots, correlation heatmaps) using Matplotlib and Seaborn.
         
-*   **Interactive Visualizations:** Production of dynamic, interactive plots using Plotly, saved as standalone HTML files, allowing for deeper data exploration (zooming, panning, hovering for details on sales trends, genre performance, and score comparisons).
+*   **Interactive Visualizations:** Production of dynamic, interactive plots using Plotly, saved as standalone JSON files, allowing for deeper data exploration (zooming, panning, hovering for details on sales trends, genre performance, and score comparisons).
     
-*   **Interactive Mini-Dashboard:** A single HTML file (`dashboard.html`) that aggregates key interactive plots, offering a concise and engaging overview of the dataset's insights into industry trends and game performance.
+*   **Interactive Mini-Dashboard:** A single HTML file (`dashboard.html`) that aggregates key interactive plots by dynamically loading their JSON data, offering a concise and engaging overview of the dataset's insights into industry trends and game performance.
     
 *   **Feature Engineering:** Derivation of new, insightful features (e.g., total review count, average score if applicable).
     
@@ -67,32 +91,60 @@ This repository serves as a demonstration of a structured, reproducible, and ins
     │       └── processed_data.csv   # Cleaned and featurized data
     ├── plots/
     │   ├── static/
+    │   │   ├── genre_metrics/
+    │   │   │   ├── critic_score_by_genre_boxplot.png
+    │   │   │   ├── global_sales_by_genre_boxplot_log.png
+    │   │   │   └── user_score_by_genre_boxplot.png
+    │   │   ├── publishers_developers/
+    │   │   │   ├── top_10_developers_sales.png
+    │   │   │   ├── top_10_publishers_sales.png
+    │   │   │   ├── top_20_publishers_avg_sales.png
+    │   │   │   └── top_20_publishers_game_count.png
+    │   │   ├── ratings/
+    │   │   │   ├── global_sales_by_rating.png
+    │   │   │   └── rating_distribution_per_genre.png
+    │   │   ├── seasonality/
+    │   │   │   └── yearly_global_sales_trend.png
+    │   │   ├── correlation_heatmap.png
     │   │   ├── global_sales_distribution.png
-    │   │   ├── year_of_release_distribution.png
     │   │   ├── regional_sales_distribution.png
     │   │   ├── sales_by_platform_static.png
-    │   │   └── top_genres_static.png
-    │   ├── html/
-    │   │   ├── sales_by_genre_interactive.html
-    │   │   ├── sales_trends_interactive.html
-    │   │   ├── critic_vs_user_score_interactive.html
-    │   │   ├── regional_sales_by_genre_interactive.html
-    │   │   ├── regional_sales_trends_interactive.html
-    │   │   ├── sales_by_platform_interactive.html
-    │   │   └── dashboard.html  # Interactive mini-dashboard
-    │   └── correlation_heatmap.png # Static heatmap
+    │   │   ├── top_genres_static.png
+    │   │   └── year_of_release_distribution.png
+    │   └── html/
+    │       ├── best_games/
+    │       │   └── top_25_global_sales_and_scores_interactive.json
+    │       ├── genre_metrics/
+    │       │   ├── critic_score_by_genre_boxplot_interactive.json
+    │       │   ├── global_sales_by_genre_boxplot_interactive.json
+    │       │   └── user_score_by_genre_boxplot_interactive.json
+    │       ├── publishers_developers/
+    │       │   ├── avg_sales_per_publisher_interactive.json
+    │       │   ├── publisher_sales_trends_interactive.json
+    │       │   └── top_25_publishers_sales_scores_interactive.json
+    │       ├── ratings/
+    │       │   ├── rating_distribution_per_genre_interactive.json
+    │       │   └── regional_sales_by_rating_interactive.json
+    │       ├── seasonality/
+    │       │   └── yearly_global_sales_trend_interactive.json
+    │       ├── critic_vs_user_score_scatter_enhanced_interactive.json
+    │       ├── dashboard.html  # Interactive mini-dashboard
+    │       ├── regional_sales_by_genre_interactive.json
+    │       ├── regional_sales_trends_interactive.json
+    │       ├── sales_by_platform_interactive.json
+    │       └── sales_trends_interactive.json
     ├── scripts/
     │   ├── data_cleaning.py
     │   ├── eda.py
-    │   ├── train_model.py
-    │   └── predict_sales.py
+    │   ├── predict_sales.py
+    │   └── train_model.py
     ├── models/
-    │   └── game_sales_model.pkl    # Trained machine learning model
+    │   ├── game_sales_model.pkl    # Trained machine learning model
+    │   └── label_encoders.pkl      # Saved label encoders for categorical features
     ├── .gitignore
-    ├── requirements.txt
     ├── main.py                     # Orchestrates the entire workflow
+    └── requirements.txt
     └── README.md
-    
     
 
 ## Getting Started
@@ -176,59 +228,54 @@ The project workflow is sequential. You can run the entire pipeline using the `m
         
     
 
-## Interpreting the Results & Insights
+## Exploratory Data Analysis (EDA) Insights
 
-### Static Plots (`plots/static/`)
+### Overall Sales and Release Trends
 
-*   `global_sales_distribution.png`: This histogram illustrates the distribution of `Global_Sales` (in millions).
+*   **Global Sales Distribution**: The distribution of global sales is highly skewed, with a large number of games having low sales and a long tail of a few blockbuster titles with very high sales. This highlights the "hit-driven" nature of the video game industry.
     
-    *   **Insight:** Often highly skewed, showing that most games have relatively low sales, with a long tail for blockbuster titles. This highlights the challenge of predicting hits.
-        
-*   `year_of_release_distribution.png`: A histogram showing the distribution of games by their `Year_of_Release`.
+*   **Year of Release Distribution**: The volume of game releases shows a clear peak around the mid-2000s to early 2010s, likely corresponding to the peak of the 7th generation of consoles (PS3, Xbox 360, Wii). There's a noticeable decline in recent years, which might be due to data limitations or shifts in market dynamics (e.g., digital-only releases not fully captured).
     
-    *   **Insight:** Reveals periods of high game releases, indicating industry growth or specific console generations.
-        
-*   `regional_sales_distribution.png`: A set of bar plots showing the total sales for North America, Europe, and Japan.
+*   **Regional Sales Distribution**: North America (NA\_Sales) and Europe (EU\_Sales) consistently represent the largest markets for video games, followed by Japan (JP\_Sales) and other regions. This regional disparity is crucial for targeted marketing and localization strategies.
     
-    *   **Insight:** Provides a quick overview of which regions are the largest markets in terms of total sales volume. This helps in understanding market dominance.
-        
-*   `sales_by_platform_static.png`: A bar plot showing the total `Global_Sales` for the top N platforms.
+*   **Sales Trends Over Time**: Global sales generally peaked around 2008-2009, aligning with the console generation peak, and have shown a gradual decline or stabilization since then in the dataset, reflecting the evolving market.
     
-    *   **Insight:** Identifies which gaming platforms have generated the most revenue over time, indicating platform market leadership.
-        
-*   `top_genres_static.png`: A bar plot showing the total `Global_Sales` for the top N genres.
-    
-    *   **Insight:** Identifies the most commercially successful genres in the video game market.
-        
-*   `correlation_heatmap.png`: A heatmap displaying the Pearson correlation coefficients between all numerical features.
-    
-    *   **Insight:** Identifies strong relationships between features like sales figures across different regions, and between sales and critic/user scores. This helps in understanding which factors are most indicative of overall sales.
-        
 
-### Interactive Plots (`plots/html/`) and Dashboard (`dashboard.html`)
+### Platform and Genre Performance
 
-These interactive plots, accessible via the dashboard, offer deeper insights and help answer specific business questions:
+*   **Top Platforms by Global Sales**: Platforms like PS2, X360, PS3, Wii, and DS have historically generated the highest global sales, indicating their immense popularity during their active lifespans. Newer generations are also emerging strongly.
+    
+*   **Top Genres by Global Sales**: Action, Sports, Shooter, and Role-Playing are consistently the highest-grossing genres globally, suggesting strong and sustained consumer demand in these categories.
+    
+*   **Regional Sales by Genre**: Genre preferences vary significantly by region. For example, Role-Playing games hold a notably larger share in Japan compared to other regions, underscoring the unique gaming tastes in Japan, with a strong preference for RPGs. In North America and Europe, focusing on popular genres like Shooter, Sports, and Action could be more successful.
+    
 
-*   `regional_sales_by_genre_interactive.html` (within dashboard): An interactive grouped bar chart showing `NA_Sales`, `EU_Sales`, and `JP_Sales` aggregated by Genre.
+### Critic vs. User Scores
+
+*   **Correlation with Sales**: The relationship between critic/user scores and global sales is positive but not always linear or strong across all genres/platforms. While high scores generally correlate with better sales, there are exceptions, indicating that other factors like marketing, brand loyalty, or unique features also play a significant role.
     
-    *   **Insight:** This plot directly addresses "Are certain genres disproportionately popular in specific regions?" You can easily compare the sales performance of Action games in North America versus Japan, or Sports games in Europe. This helps understand regional market preferences.
-        
-*   `regional_sales_trends_interactive.html` (within dashboard): An interactive line plot showing `NA_Sales`, `EU_Sales`, and `JP_Sales` trends over `Year_of_Release`.
+*   **Agreement between Scores**: There's a general positive correlation between Critic Scores and User Scores, suggesting that critics and users often agree on game quality. However, discrepancies exist, which can be valuable for understanding different audience perspectives.
     
-    *   **Insight:** This visualizes "How have regional sales trends evolved over time compared to global sales?" You can observe if certain regions experienced booms or busts independently, or if global trends are driven by specific regional markets. It helps identify market maturity and growth phases per region.
-        
-*   `sales_by_platform_interactive.html` (within dashboard): An interactive bar chart showing total `Global_Sales` by Platform.
+
+### Publisher and Developer Impact
+
+*   **Top Publishers by Total Global Sales**: Companies like Electronic Arts, Activision, Nintendo, Sony, and Ubisoft dominate the market in terms of cumulative global sales, reflecting their long-standing presence and successful franchises.
     
-    *   **Insight:** Allows for precise comparison of total sales across all platforms, with hover details for exact figures. It helps identify "Which platforms have dominated sales over time?" and see the overall market share.
-        
-*   `sales_trends_interactive.html` (within dashboard): An interactive line plot showing `Global_Sales` trends over `Year_of_Release`.
+*   **Top Developers by Total Global Sales**: Similar to publishers, certain development studios consistently produce high-selling titles, demonstrating their creative and technical prowess.
     
-    *   **Insight:** Visualizes the overall evolution of the video game market over time, highlighting periods of growth, decline, or shifts in platform/genre dominance.
-        
-*   `critic_vs_user_score_interactive.html` (within dashboard): An interactive scatter plot of `Critic_Score` vs `User_Score`, colored by Genre.
+*   **Average Sales per Game by Publisher**: Analyzing average sales per game helps identify publishers who consistently produce high-quality or high-selling individual titles, rather than just high volume.
     
-    *   **Insight:** Helps in understanding "What is the relationship between game ratings (critic and user) and sales performance?" and "Are there discrepancies between critic and user perceptions, and how do these affect sales?" You can identify games where critics and users agree/disagree, and if certain genres have a consistent bias in scores. The hover data (including `Global_Sales`) allows you to see if high scores always translate to high sales, or if there are exceptions.
-        
+
+### Game Rating Analysis
+
+*   **Global Sales by Rating**: Games with "E" (Everyone) and "T" (Teen) ratings tend to generate the highest global sales, indicating a broader market appeal for family-friendly or moderately-rated content. "M" (Mature) rated games also contribute significantly, especially in certain genres.
+    
+*   **Rating Distribution per Genre**: Certain genres predominantly target specific age groups or content levels. For example, Shooter games are often rated "M," while Sports games are typically "E" or "E10+". This insight helps in understanding content trends and target audiences within successful genres.
+    
+
+## Predictive Model
+
+A Random Forest Regressor model has been trained to predict `Global_Sales` based on various game attributes. The model provides a reasonable prediction for unseen data, though performance can be further enhanced.
 
 ## Future Enhancements
 
