@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
-import plotly.graph_objects as go
+import plotly.graph_objects as go # Import go for adding traces
 import os
 
 def load_processed_data(file_path):
@@ -86,7 +86,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     # 3. Regional Sales Distribution (Bar Plots)
     regional_sales = df[['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales']].sum()
     plt.figure(figsize=(10, 6))
-    sns.barplot(x=regional_sales.index, y=regional_sales.values, palette='viridis')
+    # FIX: Add hue=regional_sales.index and legend=False to suppress FutureWarning
+    sns.barplot(x=regional_sales.index, y=regional_sales.values, palette='viridis', hue=regional_sales.index, legend=False)
     plt.title('Total Regional Sales Distribution')
     plt.xlabel('Region')
     plt.ylabel('Total Sales (Millions)')
@@ -98,7 +99,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     # 4. Sales by Top Platforms (Bar Plot)
     top_platforms = df.groupby('Platform')['Global_Sales'].sum().nlargest(10).sort_values(ascending=False)
     plt.figure(figsize=(12, 7))
-    sns.barplot(x=top_platforms.index, y=top_platforms.values, palette='magma')
+    # FIX: Add hue=top_platforms.index and legend=False to suppress FutureWarning
+    sns.barplot(x=top_platforms.index, y=top_platforms.values, palette='magma', hue=top_platforms.index, legend=False)
     plt.title('Top 10 Platforms by Global Sales')
     plt.xlabel('Platform')
     plt.ylabel('Total Global Sales (Millions)')
@@ -111,7 +113,8 @@ def create_static_plots(df, plots_dir='plots/static'):
     # 5. Sales by Top Genres (Bar Plot)
     top_genres = df.groupby('Genre')['Global_Sales'].sum().nlargest(10).sort_values(ascending=False)
     plt.figure(figsize=(12, 7))
-    sns.barplot(x=top_genres.index, y=top_genres.values, palette='cubehelix')
+    # FIX: Add hue=top_genres.index and legend=False to suppress FutureWarning
+    sns.barplot(x=top_genres.index, y=top_genres.values, palette='cubehelix', hue=top_genres.index, legend=False)
     plt.title('Top 10 Genres by Global Sales')
     plt.xlabel('Genre')
     plt.ylabel('Total Global Sales (Millions)')
@@ -123,9 +126,6 @@ def create_static_plots(df, plots_dir='plots/static'):
 
     # 6. Correlation Heatmap
     numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
-    # Exclude 'Year_of_Release' from correlation heatmap if it's treated as a categorical-like feature
-    # or if its linear correlation with sales is not the primary interest.
-    # For this project, we'll include it as it's a numeric column.
     correlation_matrix = df[numerical_cols].corr()
     plt.figure(figsize=(12, 10))
     sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5)
@@ -205,25 +205,50 @@ def create_interactive_plots(df, plots_dir='plots/html'):
         labels={'Global_Sales': 'Total Global Sales (Millions)'},
         hover_data={'Year_of_Release': True, 'Global_Sales': ':.2f'}
     )
-    fig_global_trend.update_layout(xaxis_title="Year of Release", yaxis_title="Total Global Sales (Millions)")
+    fig_global_trend.update_layout(xaxis_title="Year of Release", yaxis_title="Total Sales (Millions)")
     fig_global_trend.write_html(os.path.join(plots_dir, 'sales_trends_interactive.html'))
     print("Saved: sales_trends_interactive.html")
 
-    # 5. Critic vs User Score (Interactive Scatter Plot)
-    # Filter out rows where scores might be missing or zero after cleaning, if any.
-    score_df = df.dropna(subset=['Critic_Score', 'User_Score', 'Global_Sales'])
+    # 5. Critic vs User Score (Interactive Scatter Plot) with Scaled User Score and Agreement Line
+    # ADDITION v5: Scale User_Score for better comparison
+    # Ensure 'User_Score' is numeric before scaling. This should be handled in data_cleaning.py,
+    # but a defensive check here is good practice.
+    if 'User_Score' in df.columns and pd.api.types.is_numeric_dtype(df['User_Score']):
+        df['User_Score_Scaled'] = df['User_Score'] * 10
+        print("Engineered 'User_Score_Scaled' for visualization.")
+    else:
+        df['User_Score_Scaled'] = np.nan # Or handle error appropriately
+        print("Warning: 'User_Score' is not numeric, cannot create 'User_Score_Scaled'.")
+
+
+    score_df = df.dropna(subset=['Critic_Score', 'User_Score_Scaled', 'Global_Sales'])
+
     fig_scores = px.scatter(
         score_df,
         x='Critic_Score',
-        y='User_Score',
+        y='User_Score_Scaled', # Use the scaled score
         color='Genre',
-        size='Global_Sales', # Size markers by global sales
+        size='Global_Sales',
         hover_name='Name',
         hover_data={'Platform': True, 'Publisher': True, 'Year_of_Release': True,
-                    'Critic_Score': ':.1f', 'User_Score': ':.1f', 'Global_Sales': ':.2f'},
-        title='Critic Score vs User Score (Sized by Global Sales)',
-        labels={'Critic_Score': 'Critic Score (out of 100)', 'User_Score': 'User Score (out of 10)'}
+                    'Critic_Score': ':.1f', 'User_Score': ':.1f', # Keep original User_Score in hover
+                    'Global_Sales': ':.2f', 'User_Score_Scaled': ':.1f'},
+        title='Critic Score vs User Score (Scaled for Comparison, Sized by Global Sales)',
+        labels={'Critic_Score': 'Critic Score (out of 100)', 'User_Score_Scaled': 'User Score (Scaled to 100)'}
     )
+
+    # Add a line of perfect agreement (y=x)
+    # Ensure the min/max for the line are based on the actual data range for Critic_Score
+    min_score = score_df['Critic_Score'].min()
+    max_score = score_df['Critic_Score'].max()
+    fig_scores.add_trace(go.Scatter(
+        x=[min_score, max_score],
+        y=[min_score, max_score],
+        mode='lines',
+        name='Perfect Agreement',
+        line=dict(color='red', dash='dash', width=2)
+    ))
+
     fig_scores.write_html(os.path.join(plots_dir, 'critic_vs_user_score_interactive.html'))
     print("Saved: critic_vs_user_score_interactive.html")
 
